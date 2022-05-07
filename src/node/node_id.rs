@@ -74,13 +74,16 @@ impl NodeId {
         Ok(new_id)
     }
 
-    // Builds an Id based on a hexadecimal number representation (i.e., 0x####).
+    // Builds an Id based on a hexadecimal number representation (i.e., 0x#### or just ####).
     pub fn from_hex(hex_number: &str) -> Result<NodeId, IdError> {
-        let re = Regex::new("^0x[0-9A-Fa-f]+$").unwrap();
+        let re_with_header = Regex::new("^0x[0-9A-Fa-f]+$").unwrap();
+        let re_without_header = Regex::new("^[0-9A-Fa-f]+$").unwrap();
         let number_string;
 
-        if re.is_match(hex_number) == true {
+        if re_with_header.is_match(hex_number) == true {
             number_string = remove_hex_header(hex_number);
+        } else if re_without_header.is_match(hex_number) == true {
+            number_string = hex_number;
         } else {
             // Invalid hex string.
             return Err(IdError::InvalidValue(String::from(
@@ -229,12 +232,33 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255
             ]))
         );
+
+        assert_eq!(
+            NodeId::from_hex("1FE"),
+            Ok(NodeId([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255
+            ]))
+        );
+
+        assert_eq!(
+            NodeId::from_hex("1fe"),
+            Ok(NodeId([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255
+            ]))
+        );
     }
 
     #[test]
     fn from_hex_success_partial_remaining() {
         assert_eq!(
             NodeId::from_hex("0x212"),
+            Ok(NodeId([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 255, 255
+            ]))
+        );
+
+        assert_eq!(
+            NodeId::from_hex("212"),
             Ok(NodeId([
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 255, 255
             ]))
