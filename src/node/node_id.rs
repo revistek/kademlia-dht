@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(
             NodeId::from_number("1234567890"),
             Err(IdError::ValueOutOfRange(String::from(
-                "The value is to large!",
+                "The value is to large!"
             )))
         );
     }
@@ -205,14 +205,14 @@ mod tests {
         assert_eq!(
             NodeId::from_hex("0x75BCD15"),
             Err(IdError::ValueOutOfRange(String::from(
-                "The value is to large!",
+                "The value is to large!"
             )))
         );
 
         assert_eq!(
             NodeId::from_hex("0x75bcd15"),
             Err(IdError::ValueOutOfRange(String::from(
-                "The value is to large!",
+                "The value is to large!"
             )))
         );
     }
