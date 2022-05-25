@@ -28,6 +28,17 @@ impl Identifier {
     pub fn get_id(&self) -> &BitVec<u8, Msb0> {
         &self.value
     }
+
+    pub fn is_match(&self, other: &Identifier) -> bool {
+        // The first 7 elements/bits are always the same. They may be some kind of header.
+        let prefix_length = self.value.len();
+
+        if prefix_length <= other.value.len() {
+            return other.value[0..prefix_length] == self.value;
+        }
+
+        false
+    }
 }
 
 #[cfg(test)]
@@ -57,5 +68,25 @@ mod tests {
         let id_val = BitVec::<u8, Msb0>::from_slice(b"101");
 
         assert_eq!(id.get_id(), &id_val);
+    }
+
+    #[test]
+    fn is_match() {
+        let mut id = Identifier::new(b"101").unwrap();
+        let mut other = Identifier::new(b"101").unwrap();
+
+        assert_eq!(id.value.len() == other.value.len(), true);
+        assert_eq!(id.is_match(&other), true);
+
+        other = Identifier::new(b"1").unwrap();
+
+        assert_eq!(id.value.len() > other.value.len(), true);
+        assert_eq!(id.is_match(&other), false);
+
+        other = Identifier::new(b"17").unwrap();
+        id = Identifier::new(b"1").unwrap();
+
+        assert_eq!(id.value.len() < other.value.len(), true);
+        assert_eq!(id.is_match(&other), true);
     }
 }
