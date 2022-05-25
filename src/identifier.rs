@@ -1,6 +1,11 @@
 // An unsigened integer identifier of variable length, heap allocated.
+use bitvec::prelude::BitVec;
+use bitvec::prelude::Msb0;
+
 #[derive(Debug, PartialEq)]
-pub struct Identifier(Vec<u8>);
+pub struct Identifier {
+    value: BitVec<u8, Msb0>,
+}
 
 #[derive(Debug, PartialEq)]
 pub enum IdentifierError {
@@ -8,51 +13,20 @@ pub enum IdentifierError {
 }
 
 impl Identifier {
-    // Create the identifier from a decimal integer string.
-    pub fn from_decimal(number: &str) -> Result<Identifier, IdentifierError> {
-        let number_str = str::replace(number, ',', ""); // Clean string - Remove all commas.
-
-        let is_number = number_str.chars().all(char::is_numeric);
-        if is_number == false {
+    pub fn new(id: &[u8]) -> Result<Identifier, IdentifierError> {
+        if id.len() == 0 {
             return Err(IdentifierError::InvalidValue(String::from(
-                "The input string is invalid.",
+                "The ID cannot be nothing.",
             )));
         }
 
-        let number_bytes = number_str.into_bytes();
+        Ok(Identifier {
+            value: BitVec::<u8, Msb0>::from_slice(id),
+        })
+    }
 
-        let mut number_vector = Vec::new(); // The number as a vector of u8 values.
-
-        //let mut new_id = Identifier(Vec::new()); // The Identifier object to be returned.
-        let mut temp: u128 = 0;
-        //let mut id_arr_idx: usize = 19; // The index of the array to update.
-        let ascii_base_codepoint = 48; // The base ASCII codepoint for numbers (i.e., 0x30 since
-                                       // number = 0x30 + number).
-
-        for (idx, x) in number_bytes.iter().rev().enumerate() {
-            // Iterate through the byte array to build the Id.
-            let current_val = ((x - ascii_base_codepoint) as u32) * ((10 as u32).pow(idx as u32));
-            temp += current_val as u128;
-
-            while temp > 255 {
-                if temp < 256 {
-                    number_vector.push(temp as u8);
-                    temp = 0;
-                } else {
-                    number_vector.push(255 as u8);
-                    temp -= 255;
-                }
-            }
-        }
-
-        if temp > 0 {
-            // Add remainder.
-            number_vector.push(temp as u8);
-        }
-
-        // The u8 values were added right to left. Reverse it.
-        number_vector.reverse();
-        Ok(Identifier(number_vector))
+    pub fn get_id(&self) -> &BitVec<u8, Msb0> {
+        &self.value
     }
 }
 
@@ -61,28 +35,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn from_decimal_invalid_input() {
+    fn new_valid() {
+        let id = Identifier::new(b"101").unwrap();
+
+        assert_eq!(id.value, BitVec::<u8, Msb0>::from_slice(b"101"));
+    }
+
+    #[test]
+    fn new_invalid() {
         assert_eq!(
-            Identifier::from_decimal("1234567890J"),
+            Identifier::new(b""),
             Err(IdentifierError::InvalidValue(String::from(
-                "The input string is invalid."
+                "The ID cannot be nothing.",
             )))
         );
     }
 
     #[test]
-    fn from_decimal_success() {
-        assert_eq!(
-            Identifier::from_decimal("510"),
-            Ok(Identifier(vec![255 as u8, 255 as u8]))
-        );
-    }
+    fn get_id() {
+        let id = Identifier::new(b"101").unwrap();
+        let id_val = BitVec::<u8, Msb0>::from_slice(b"101");
 
-    #[test]
-    fn from_decimal_success_with_remainder() {
-        assert_eq!(
-            Identifier::from_decimal("530"),
-            Ok(Identifier(vec![20 as u8, 255 as u8, 255 as u8]))
-        );
+        assert_eq!(id.get_id(), &id_val);
     }
 }
